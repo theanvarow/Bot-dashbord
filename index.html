@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Размещение товаров — Логистика</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #F1F5F9;
+      --surface: #FFFFFF;
+      --surface-2: #F8FAFC;
+      --border: #E2E8F0;
+      --border-2: #CBD5E1;
+      --text: #0F172A;
+      --text-2: #475569;
+      --text-3: #94A3B8;
+      --blue: #2563EB;
+      --blue-light: #EFF6FF;
+      --blue-mid: #BFDBFE;
+      --green: #059669;
+      --green-light: #D1FAE5;
+      --red: #DC2626;
+      --red-light: #FEE2E2;
+      --amber: #D97706;
+      --amber-light: #FEF3C7;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+      --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.05);
+      --radius: 12px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    html{scroll-behavior:smooth;}
+    body{
+      font-family:'Onest',-apple-system,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      line-height:1.5;
+      min-height:100vh;
+    }
+    .dashboard{max-width:1600px;margin:0 auto;padding:1.75rem;}
+
+    .header{
+      display:flex;align-items:flex-start;justify-content:space-between;
+      gap:1rem;
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:1.25rem 1.75rem;
+      margin-bottom:1.25rem;
+      box-shadow:var(--shadow-sm);
+    }
+    .header-left{display:flex;align-items:center;gap:1rem;min-width:0;}
+    .header-icon{
+      width:44px;height:44px;border-radius:10px;
+      background:var(--blue);
+      display:flex;align-items:center;justify-content:center;
+      font-size:1.25rem;flex-shrink:0;
+    }
+    .header-title h1{font-size:1.1875rem;font-weight:700;color:var(--text);line-height:1.3;}
+    .header-title p{font-size:0.8125rem;color:var(--text-2);margin-top:2px;}
+    .header-right{
+      display:flex;
+      align-items:flex-end;
+      gap:.875rem;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .badge{
+      font-size:0.75rem;font-weight:600;
+      background:var(--blue-light);color:var(--blue);
+      padding:.3rem .875rem;border-radius:999px;
+      border:1px solid var(--blue-mid);white-space:nowrap;
+    }
+    .upload-btn{
+      display:flex;align-items:center;gap:.5rem;
+      font-family:inherit;font-size:.875rem;font-weight:500;
+      color:var(--text-2);background:var(--surface);
+      border:1px solid var(--border-2);
+      padding:.5rem 1rem;border-radius:8px;cursor:pointer;
+      transition:all .15s;white-space:nowrap;
+    }
+    .upload-btn:hover{border-color:var(--blue);color:var(--blue);box-shadow:var(--shadow);}
+    .control-panel{
+      display:flex;
+      gap:.75rem;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+    }
+    .toggle-card{
+      display:flex;
+      align-items:center;
+      gap:.625rem;
+      padding:.55rem .8rem;
+      background:var(--surface-2);
+      border:1px solid var(--border);
+      border-radius:10px;
+      min-height:40px;
+    }
+    .toggle-card input{
+      appearance:none;
+      width:38px;
+      height:22px;
+      border-radius:999px;
+      background:#CBD5E1;
+      position:relative;
+      cursor:pointer;
+      transition:all .18s ease;
+      flex-shrink:0;
+      outline:none;
+      border:none;
+    }
+    .toggle-card input::after{
+      content:'';
+      position:absolute;
+      top:3px;
+      left:3px;
+      width:16px;
+      height:16px;
+      border-radius:50%;
+      background:#fff;
+      box-shadow:0 1px 2px rgba(0,0,0,.18);
+      transition:all .18s ease;
+    }
+    .toggle-card input:checked{
+      background:var(--blue);
+    }
+    .toggle-card input:checked::after{
+      left:19px;
+    }
+    .toggle-text{
+      display:flex;
+      flex-direction:column;
+      line-height:1.1;
+    }
+    .toggle-text strong{
+      font-size:.8125rem;
+      color:var(--text);
+      font-weight:700;
+    }
+    .toggle-text span{
+      font-size:.6875rem;
+      color:var(--text-3);
+      margin-top:2px;
+    }
+    .mode-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:.5rem;
+      margin-top:.875rem;
+    }
+    .mode-chip{
+      font-size:.6875rem;
+      font-weight:700;
+      padding:.32rem .65rem;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:#fff;
+      color:var(--text-2);
+    }
+    .mode-chip.active{
+      background:#EEF4FF;
+      border-color:#BFDBFE;
+      color:#1D4ED8;
+    }
+
+    .kpi-grid{
+      display:grid;grid-template-columns:repeat(5,1fr);
+      gap:1rem;margin-bottom:1.25rem;
+    }
+    .kpi-card{
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--radius);padding:1.25rem;
+      box-shadow:var(--shadow-sm);
+      transition:transform .2s,box-shadow .2s;
+      overflow:hidden;position:relative;
+    }
+    .kpi-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);}
+    .kpi-card::before{
+      content:'';position:absolute;top:0;left:0;right:0;height:3px;
+      border-radius:var(--radius) var(--radius) 0 0;
+    }
+    .kpi-card.blue::before{background:var(--blue);}
+    .kpi-card.green::before{background:var(--green);}
+    .kpi-card.red::before{background:var(--red);}
+    .kpi-card.purple::before{background:#7C3AED;}
+    .kpi-card.cyan::before{background:#0891B2;}
+    .kpi-label{
+      font-size:.6875rem;font-weight:700;
+      color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;
+      margin-bottom:.5rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .kpi-value{
+      font-size:2.125rem;font-weight:800;
+      color:var(--text);line-height:1.1;margin-bottom:.375rem;
+    }
+    .kpi-delta{
+      display:flex;align-items:center;gap:.25rem;
+      font-size:.75rem;font-weight:600;
+    }
+    .kpi-delta.pos{color:var(--green);}
+    .kpi-delta.neg{color:var(--red);}
+    .kpi-delta.neu{color:var(--text-3);}
+    .kpi-spark{margin-top:.75rem;height:40px;line-height:0;}
+
+    .chart-card{
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--radius);padding:1.5rem;
+      box-shadow:var(--shadow-sm);margin-bottom:1.25rem;
+    }
+    .chart-head{
+      display:flex;align-items:flex-start;justify-content:space-between;
+      gap:1rem;
+      margin-bottom:1.25rem;
+    }
+    .chart-title{font-size:.9375rem;font-weight:700;color:var(--text);}
+    .chart-sub{font-size:.8125rem;color:var(--text-2);margin-top:2px;}
+    .chart-row{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem;}
+    .chart-canvas-wrap{position:relative;}
+    .legend-row{
+      display:flex;flex-wrap:wrap;gap:.375rem .875rem;margin-top:1rem;
+    }
+    .leg-item{display:flex;align-items:center;gap:.375rem;font-size:.75rem;color:var(--text-2);font-weight:500;}
+    .leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+    .leg-sq{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+
+    .heatmap-scroll{
+      overflow:auto;max-height:440px;
+      border:1px solid var(--border);border-radius:8px;
+      margin-top:.25rem;
+    }
+    .heatmap-table{
+      width:100%;border-collapse:separate;border-spacing:0;
+      font-size:.75rem;
+    }
+    .heatmap-table thead th{
+      position:sticky;top:0;z-index:10;
+      background:#F8FAFC;
+      border-bottom:2px solid var(--border-2);
+      padding:.625rem .375rem;
+      font-size:.625rem;font-weight:700;
+      color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;
+      text-align:center;white-space:nowrap;min-width:80px;
+    }
+    .heatmap-table thead th:first-child{
+      position:sticky;left:0;z-index:20;
+      min-width:115px;text-align:left;
+      padding-left:1rem;
+      box-shadow:2px 0 4px rgba(0,0,0,.06);
+    }
+    .heatmap-table thead th:nth-child(2){min-width:80px;}
+    .heatmap-table tbody tr{transition:filter .1s;}
+    .heatmap-table tbody tr:hover td{filter:brightness(.94);}
+    .heatmap-table tbody td{
+      padding:.375rem;text-align:center;
+      border-bottom:1px solid #F1F5F9;
+      vertical-align:middle;
+    }
+    .heatmap-table tbody td:first-child{
+      position:sticky;left:0;z-index:5;
+      background:var(--surface) !important;
+      border-right:1px solid var(--border);
+      font-weight:600;font-size:.75rem;color:var(--text-2);
+      text-align:left;padding-left:1rem;
+      white-space:nowrap;
+      box-shadow:2px 0 4px rgba(0,0,0,.06);
+    }
+    .heatmap-table tfoot td{
+      position:sticky;bottom:0;z-index:8;
+      border-top:2px solid var(--border-2);
+      padding:.5rem .375rem;
+      background:#F0F4FF !important;
+      font-weight:700;
+    }
+    .heatmap-table tfoot td:first-child{
+      position:sticky;left:0;bottom:0;z-index:15;
+      background:#EEF2FF !important;
+      text-align:left;padding-left:1rem;
+      font-size:.75rem;color:var(--blue);
+      box-shadow:2px 0 4px rgba(0,0,0,.06);
+    }
+    .cell-in{
+      display:flex;flex-direction:column;
+      align-items:center;gap:3px;padding:2px 4px;
+    }
+    .cell-val{font-size:.725rem;font-weight:700;line-height:1;}
+    .cell-bar-wrap{width:100%;height:3px;background:rgba(0,0,0,.09);border-radius:99px;overflow:hidden;}
+    .cell-bar{height:100%;border-radius:99px;transition:width .3s;}
+
+    .alert{
+      display:none;
+      margin-bottom:1rem;
+      padding:1rem 1.1rem;
+      border-radius:10px;
+      border:1px solid #FECACA;
+      background:#FEF2F2;
+      color:#991B1B;
+      font-size:.875rem;
+      font-weight:600;
+      box-shadow:var(--shadow-sm);
+    }
+    .alert.show{display:block;}
+
+    @media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(3,1fr);}}
+    @media(max-width:960px){
+      .chart-row{grid-template-columns:1fr;}
+      .kpi-grid{grid-template-columns:repeat(2,1fr);}
+      .header{flex-direction:column;align-items:stretch;}
+      .header-right{justify-content:flex-start;align-items:flex-start;}
+    }
+    @media(max-width:600px){
+      .dashboard{padding:1rem;}
+      .kpi-grid{grid-template-columns:1fr 1fr;}
+      .kpi-value{font-size:1.75rem;}
+      .control-panel{flex-direction:column;align-items:stretch;}
+      .toggle-card{width:100%;}
+    }
+  </style>
+</head>
+<body>
+<div class="dashboard">
+
+  <div class="alert" id="errorBox"></div>
+
+  <div class="header">
+    <div class="header-left">
+      <div class="header-icon">📦</div>
+      <div class="header-title">
+        <h1>Размещение товаров в целевые зоны</h1>
+        <p id="period-sub">Загрузка данных…</p>
+        <div class="mode-row">
+          <span class="mode-chip" id="chipSafebox">Safebox в расчёте</span>
+          <span class="mode-chip" id="chipMerge">Категории раздельно</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <span class="badge" id="period-badge">—</span>
+
+      <div class="control-panel">
+        <label class="toggle-card">
+          <input type="checkbox" id="toggleSafebox">
+          <div class="toggle-text">
+            <strong>Исключить Safebox</strong>
+            <span>100 - Safebox распределяется на 6 категорий</span>
+          </div>
+        </label>
+
+        <label class="toggle-card">
+          <input type="checkbox" id="toggleMerge">
+          <div class="toggle-text">
+            <strong>Объединить категории</strong>
+            <span>Хобби и творчество + Спорт и отдых = Спорт и хобби</span>
+          </div>
+        </label>
+
+        <label class="upload-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          Загрузить CSV
+          <input type="file" id="fileInput" accept=".csv" style="display:none">
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <div class="chart-card">
+    <div class="chart-head">
+      <div>
+        <div class="chart-title">Состав размещения по категориям — Stacked Area</div>
+        <div class="chart-sub">Нормализованная доля топ-10 категорий · факт Итого % слева, состав топ-10 справа</div>
+      </div>
+      <div class="badge" id="area-period-badge">—</div>
+    </div>
+    <div class="chart-canvas-wrap"><canvas id="areaChart"></canvas></div>
+    <div class="legend-row" id="areaLegend"></div>
+  </div>
+
+  <div class="chart-row">
+    <div class="chart-card" style="margin-bottom:0">
+      <div class="chart-head">
+        <div>
+          <div class="chart-title">Динамика ключевых категорий</div>
+          <div class="chart-sub">Линейный график · лучшие, средние и слабые категории по текущему режиму расчёта</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap"><canvas id="lineChart"></canvas></div>
+    </div>
+    <div class="chart-card" style="margin-bottom:0">
+      <div class="chart-head">
+        <div>
+          <div class="chart-title">Рейтинг категорий</div>
+          <div class="chart-sub">Средний % размещения · все активные категории</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap"><canvas id="barChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-top:1.25rem">
+    <div class="chart-head">
+      <div>
+        <div class="chart-title">Тепловая карта — % размещения по дням и категориям</div>
+        <div class="chart-sub">Первая колонка и заголовок фиксированы. Таблица перестраивается с учётом выбранных режимов.</div>
+      </div>
+    </div>
+    <div class="heatmap-scroll">
+      <table class="heatmap-table" id="hmTable"></table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ────────────────────────────────────────────────────────────
+   EMBEDDED CSV DATA
+──────────────────────────────────────────────────────────── */
+const EMBEDDED_CSV = `"placement_day","total_share","Aksessuary_share","Krasota_i_uhod_share","Elektronika_share","Avtotovary_share","Bytovaya_himiya_share","Sport_i_otdyh_share","Hobbi_i_tvorchestvo_share","Stroitelstvo_i_remont_share","Zootovary_share","Bytovaya_tehnika_share","Produkty_pitaniya_share","Detskie_tovary_share","Obuv_share","Zdorovie_share","Safebox_items_share","Knigi_i_kanctovary_share","Tovary_dlya_doma_share","Odezhda_share","Dacha_i_sad_share"
+14/02/2026,51.0,59.7,73.8,9.78,54.7,73.5,24.0,37.8,64.7,53.4,40.5,85.0,23.3,92.4,56.9,9.05,87.7,33.9,93.2,46.1
+15/02/2026,46.0,60.2,80.1,12.1,34.9,49.9,46.8,3.06,35.3,75.3,18.2,72.0,47.5,90.9,56.4,4.22,64.5,36.5,93.7,37.9
+16/02/2026,49.4,58.6,74.2,9.65,47.1,85.8,54.7,31.1,29.0,79.1,7.41,86.3,49.0,93,8.49,7.74,75.7,49.9,91.2,49.5
+17/02/2026,58.1,78.0,86.3,16.7,73.7,81.4,29.3,46.3,48.2,86.8,31.1,94.4,49.5,97.8,75.4,3.33,88.3,52.5,92.4,30.2
+18/02/2026,49.7,63.6,72.7,12.5,59.7,82.8,69.6,7.42,41.0,53.8,26.3,86.0,42.4,95.8,44.8,5.72,79.0,55.0,96.0,0.770
+19/02/2026,53.7,75.9,81.3,22.5,61.2,72.7,66.0,17.4,54.0,79.8,38.6,82.5,56.4,89.9,37.8,7.57,64.5,31.7,93.6,40.4
+20/02/2026,56.6,61.1,85.0,27.2,79.7,47.2,45.8,28.6,49.6,60.8,28.2,99.3,43.2,96.7,72.2,10.7,87.6,64.6,96.1,48.7
+21/02/2026,48.8,50.8,80.5,7.05,74.0,88.8,60.4,23.0,20.8,18.1,25.5,88.9,47.4,94.9,57.5,6.45,82.1,45.6,94.8,9.14
+22/02/2026,51.0,73.8,80,10.7,48.8,82.9,50.3,17.2,19.6,60.7,12.9,92.5,37.8,81.0,75.7,9.37,66.5,38.9,95.8,64.7
+23/02/2026,49.8,59.1,82.6,31.6,59.8,77.7,49.0,9.26,42.8,44.3,31.2,85.4,24.9,93.7,34.9,5.97,87.2,43.9,93.1,39.0
+24/02/2026,53.2,67.9,59.9,11.1,67.5,59.3,71.4,37.1,45.4,87.2,13.0,67.7,52.4,95.5,64.4,5.96,81.6,33.3,94.9,47.9
+25/02/2026,57.2,56.0,78.7,13.0,75.2,78.7,51.9,15.5,45.7,89.8,34.8,85.9,56.6,93.9,44.5,5.16,90.7,62.3,96.9,68.0
+26/02/2026,52.2,70.5,75.0,18.9,74.7,71.9,40.0,36.5,46.9,36.3,39.4,91.6,29.9,84.3,43.2,8.97,73.6,42.8,96.7,63.5
+27/02/2026,50.7,57.7,81.3,18.4,60.6,82.2,37.1,31.8,46.4,70.5,26.3,92.9,49.4,92.0,38.3,4.59,70.5,40.0,93.4,21.1
+28/02/2026,52.2,70.2,90.6,18.8,79.0,77.6,51.4,12.3,21.6,63.2,21.3,78.5,29.5,98.8,69.7,9.65,88.5,65.7,97.1,0
+01/03/2026,53.5,61.8,83.0,8.28,83.7,76.7,71.7,14.6,34.2,71.4,12.8,93.2,35.6,85.0,64.2,5.06,81.5,54.2,98.4,33.8
+02/03/2026,56.7,68.4,76.0,14.2,75.5,90.1,67.2,43.3,51.5,55.8,22.6,85.6,38.6,90.1,54.3,7.54,72.8,56.2,91.1,72.8
+03/03/2026,51.4,47.3,80.6,22.6,72.4,37.7,54.0,26.5,30,83.2,40.6,89.1,48.3,88.1,54.4,9.69,83.3,40.8,95.3,24.8
+04/03/2026,54.8,76.1,86.6,13.4,55.7,30.9,61.3,31.2,40.8,93.1,35.9,94.5,54.2,89.5,49.2,9.92,80.5,51.9,92.7,49.5
+05/03/2026,51.7,68.1,73.6,26.9,62.0,73.8,58.1,24.8,23.4,41.2,34.0,77.2,45.1,93.4,74.3,8.87,80.2,40.6,97.2,31.6
+06/03/2026,50.9,65.4,69.1,13.5,55.2,76.5,70.2,50.7,20.9,13.9,59.3,94.2,21.4,92.3,62.9,8,79.6,47.8,95.7,21.9
+07/03/2026,57.7,78.2,86.7,8.83,74.2,92.1,50.1,20.3,45.0,84.3,59.7,87.9,18.1,86.2,76.3,11.4,88.3,45.5,93.6,48.3
+08/03/2026,60.3,76.6,87.3,8.14,82.5,84.7,63.3,40.1,64.3,78.8,55.9,74.9,35.9,95.5,43.6,8.11,82.5,59.7,97.4,66.3
+09/03/2026,57.5,76.4,82.5,15.1,63.2,86.7,61.7,53.5,48.5,89.8,36.7,88.9,36.6,92.2,49.0,7.28,85.7,45.2,98.3,32.7
+10/03/2026,52.7,70.6,88.2,13.1,64.2,28.9,62.8,26.9,37.7,77.7,30.4,89.9,43.6,80.6,73.1,3.46,77.7,68.3,91.5,25.4
+11/03/2026,56.2,66.4,81.9,10.5,85.3,79.1,68.3,54.7,34.3,6.34,57.5,95.9,48.5,92.5,71.1,7.63,75.9,52.9,92.6,42.2
+12/03/2026,58.5,57.8,70.4,19.3,75.0,83.5,78.3,41.9,68.5,49.1,44.6,94.3,36.2,84.1,72.5,11.8,84.8,65.1,91.9,41.6
+13/03/2026,57.4,78.4,82.3,23.2,68.6,81.9,82.1,21.3,69.5,27.9,37.6,84.3,53.5,93.3,48.3,6.56,91.1,66.2,99.8,32.4
+14/03/2026,56.3,71.1,83.2,27,78.1,81.8,43.8,16.2,53.2,70.6,26.0,91.0,54.6,76.7,49.1,8.71,75.8,42.3,95.1,81.5
+15/03/2026,55.4,66.1,85.2,18.2,53.6,91.3,50.6,33.7,39.4,89.1,39.7,94.3,26.3,88.3,59.3,5.92,77.2,52.1,97.1,39.7`;
+
+/* ────────────────────────────────────────────────────────────
+   BASE META / RULES
+──────────────────────────────────────────────────────────── */
+const BASE_CAT_META = {
+  'Aksessuary_share':            'Аксессуары',
+  'Krasota_i_uhod_share':        'Красота и уход',
+  'Elektronika_share':           'Электроника',
+  'Avtotovary_share':            'Автотовары',
+  'Bytovaya_himiya_share':       'Бытовая химия',
+  'Sport_i_otdyh_share':         'Спорт и отдых',
+  'Hobbi_i_tvorchestvo_share':   'Хобби и творч.',
+  'Stroitelstvo_i_remont_share': 'Строительство',
+  'Zootovary_share':             'Зоотовары',
+  'Bytovaya_tehnika_share':      'Бытовая техника',
+  'Produkty_pitaniya_share':     'Продукты пит.',
+  'Detskie_tovary_share':        'Детские товары',
+  'Obuv_share':                  'Обувь',
+  'Zdorovie_share':              'Здоровье',
+  'Safebox_items_share':         'Safebox',
+  'Knigi_i_kanctovary_share':    'Книги и канц.',
+  'Tovary_dlya_doma_share':      'Товары д/дома',
+  'Odezhda_share':               'Одежда',
+  'Dacha_i_sad_share':           'Дача и сад',
+  'Sport_i_hobbi_share':         'Спорт и хобби'
+};
+
+const BASE_ORDER = [
+  'Aksessuary_share',
+  'Krasota_i_uhod_share',
+  'Elektronika_share',
+  'Avtotovary_share',
+  'Bytovaya_himiya_share',
+  'Sport_i_otdyh_share',
+  'Hobbi_i_tvorchestvo_share',
+  'Sport_i_hobbi_share',
+  'Stroitelstvo_i_remont_share',
+  'Zootovary_share',
+  'Bytovaya_tehnika_share',
+  'Produkty_pitaniya_share',
+  'Detskie_tovary_share',
+  'Obuv_share',
+  'Zdorovie_share',
+  'Safebox_items_share',
+  'Knigi_i_kanctovary_share',
+  'Tovary_dlya_doma_share',
+  'Odezhda_share',
+  'Dacha_i_sad_share'
+];
+
+const SAFEBOX_REDISTRIBUTE_TO = [
+  'Elektronika_share',
+  'Krasota_i_uhod_share',
+  'Avtotovary_share',
+  'Bytovaya_tehnika_share',
+  'Stroitelstvo_i_remont_share',
+  'Aksessuary_share'
+];
+
+const PALETTE = [
+  {s:'#3B82F6', p:'rgba(59,130,246,0.28)'},
+  {s:'#10B981', p:'rgba(16,185,129,0.28)'},
+  {s:'#F59E0B', p:'rgba(245,158,11,0.28)'},
+  {s:'#EF4444', p:'rgba(239,68,68,0.28)'},
+  {s:'#8B5CF6', p:'rgba(139,92,246,0.28)'},
+  {s:'#06B6D4', p:'rgba(6,182,212,0.28)'},
+  {s:'#F97316', p:'rgba(249,115,22,0.28)'},
+  {s:'#EC4899', p:'rgba(236,72,153,0.28)'},
+  {s:'#14B8A6', p:'rgba(20,184,166,0.28)'},
+  {s:'#6366F1', p:'rgba(99,102,241,0.28)'},
+];
+
+/* ────────────────────────────────────────────────────────────
+   GLOBAL STATE
+──────────────────────────────────────────────────────────── */
+let rawRows = [];
+let areaChart = null;
+let lineChart = null;
+let barChart = null;
+let _sparkId = 0;
+
+/* ────────────────────────────────────────────────────────────
+   HELPERS
+──────────────────────────────────────────────────────────── */
+function num(v) {
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'string') {
+    const cleaned = v.trim().replace(',', '.');
+    const n = parseFloat(cleaned);
+    return Number.isFinite(n) ? n : 0;
+  }
+  return 0;
+}
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
+function parseDateRu(str) {
+  if (!str || typeof str !== 'string') return null;
+  const m = str.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return null;
+  const d = Number(m[1]);
+  const mo = Number(m[2]) - 1;
+  const y = Number(m[3]);
+  const dt = new Date(y, mo, d);
+  return Number.isNaN(dt.getTime()) ? null : dt;
+}
+function sortRowsByDate(rows) {
+  return [...rows].sort((a, b) => {
+    const da = parseDateRu(a.placement_day);
+    const db = parseDateRu(b.placement_day);
+    const ta = da ? da.getTime() : 0;
+    const tb = db ? db.getTime() : 0;
+    return ta - tb;
+  });
+}
+function avg(arr) {
+  if (!arr || !arr.length) return 0;
+  return arr.reduce((a,b)=>a+b,0) / arr.length;
+}
+function safeSliceAvg(arr, start, end) {
+  const part = arr.slice(start, end);
+  return part.length ? avg(part) : 0;
+}
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = msg;
+  box.classList.add('show');
+}
+function hideError() {
+  const box = document.getElementById('errorBox');
+  box.textContent = '';
+  box.classList.remove('show');
+}
+function getDisplayName(key) {
+  return BASE_CAT_META[key] || key;
+}
+function getModeState() {
+  return {
+    excludeSafebox: document.getElementById('toggleSafebox').checked,
+    mergeSportHobby: document.getElementById('toggleMerge').checked
+  };
+}
+
+/* ────────────────────────────────────────────────────────────
+   CSV PARSE / VALIDATION
+──────────────────────────────────────────────────────────── */
+function parseCSV(text) {
+  const parsed = Papa.parse(text.replace(/^\uFEFF/, ''), {
+    header: true,
+    skipEmptyLines: true,
+    dynamicTyping: false,
+    transformHeader: h => String(h || '').trim().replace(/^"|"$/g, '')
+  });
+
+  if (parsed.errors && parsed.errors.length) {
+    const critical = parsed.errors.find(e => e.code !== 'UndetectableDelimiter');
+    if (critical) {
+      throw new Error('Не удалось корректно разобрать CSV. Проверь структуру файла.');
+    }
+  }
+
+  const rows = (parsed.data || []).map(raw => {
+    const row = {};
+    Object.keys(raw).forEach(k => {
+      const cleanKey = String(k || '').trim();
+      if (!cleanKey) return;
+      if (cleanKey === 'placement_day') {
+        row[cleanKey] = String(raw[k] || '').trim();
+      } else {
+        row[cleanKey] = num(raw[k]);
+      }
+    });
+    return row;
+  }).filter(r => r.placement_day);
+
+  if (!rows.length) {
+    throw new Error('CSV не содержит строк с данными.');
+  }
+
+  const required = ['placement_day', 'total_share', ...Object.keys(BASE_CAT_META).filter(k => k !== 'Sport_i_hobbi_share')];
+  const missing = required.filter(k => !(k in rows[0]));
+  if (missing.length) {
+    throw new Error('В CSV отсутствуют обязательные колонки: ' + missing.join(', '));
+  }
+
+  return sortRowsByDate(rows);
+}
+
+/* ────────────────────────────────────────────────────────────
+   TRANSFORM DATA
+──────────────────────────────────────────────────────────── */
+function transformRows(sourceRows, mode) {
+  return sourceRows.map(src => {
+    const row = {...src};
+
+    Object.keys(row).forEach(k => {
+      if (k !== 'placement_day') row[k] = num(row[k]);
+    });
+
+    if (mode.excludeSafebox) {
+      const safebox = num(row['Safebox_items_share']);
+      const remainder = Math.max(0, 100 - safebox);
+      const add = remainder / SAFEBOX_REDISTRIBUTE_TO.length;
+
+      SAFEBOX_REDISTRIBUTE_TO.forEach(key => {
+        row[key] = num(row[key]) + add;
+      });
+
+      delete row['Safebox_items_share'];
+    }
+
+    if (mode.mergeSportHobby) {
+      const sport = num(row['Sport_i_otdyh_share']);
+      const hobby = num(row['Hobbi_i_tvorchestvo_share']);
+      row['Sport_i_hobbi_share'] = sport + hobby;
+      delete row['Sport_i_otdyh_share'];
+      delete row['Hobbi_i_tvorchestvo_share'];
+    }
+
+    return row;
+  });
+}
+
+function getActiveCategories(rows) {
+  if (!rows.length) return [];
+  const keys = Object.keys(rows[0]).filter(k => k !== 'placement_day' && k !== 'total_share');
+  return BASE_ORDER.filter(k => keys.includes(k));
+}
+
+/* ────────────────────────────────────────────────────────────
+   COMPUTE STATS
+──────────────────────────────────────────────────────────── */
+function stats(rows, cats) {
+  const catAvg = {};
+  cats.forEach(k => {
+    catAvg[k] = avg(rows.map(r => num(r[k])));
+  });
+
+  const sorted = [...cats].sort((a,b) => catAvg[b] - catAvg[a]);
+  const totals = rows.map(r => num(r.total_share));
+  const avgTotal = avg(totals);
+
+  const last7 = safeSliceAvg(totals, Math.max(0, totals.length - 7), totals.length);
+  const prev7 = safeSliceAvg(totals, Math.max(0, totals.length - 14), Math.max(0, totals.length - 7));
+
+  const lastVal = totals.length ? totals[totals.length - 1] : 0;
+  const prevVal = totals.length > 1 ? totals[totals.length - 2] : 0;
+  const above75 = sorted.filter(k => catAvg[k] >= 75).length;
+
+  return { catAvg, sorted, totals, avgTotal, last7, prev7, lastVal, prevVal, above75 };
+}
+
+/* ────────────────────────────────────────────────────────────
+   SPARKLINE SVG
+──────────────────────────────────────────────────────────── */
+function sparkline(vals, color, w=180, h=40) {
+  if (!vals || vals.length < 2) return '';
+  const id = 'sg' + (_sparkId++);
+  const mn = Math.min(...vals), mx = Math.max(...vals), rng = (mx - mn) || 1;
+  const pad = 4;
+  const pts = vals.map((v,i) => {
+    const x = (i/(vals.length-1))*w;
+    const y = h - pad - ((v-mn)/rng)*(h-pad*2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const area = `0,${h} ${pts.join(' ')} ${w},${h}`;
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${color}" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <polygon points="${area}" fill="url(#${id})"/>
+    <polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"/>
+  </svg>`;
+}
+
+/* ────────────────────────────────────────────────────────────
+   KPI CARDS
+──────────────────────────────────────────────────────────── */
+function renderKPIs(rows, st, cats) {
+  const trend = st.last7 - st.prev7;
+  const dayDelta = st.lastVal - st.prevVal;
+  const best = st.sorted[0];
+  const worst = st.sorted[st.sorted.length - 1];
+
+  const cards = [
+    {
+      cls:'blue',
+      label:'Средний % (весь период)',
+      val: st.avgTotal.toFixed(1) + '%',
+      delta: (trend >= 0 ? '+' : '') + trend.toFixed(1) + '% к пред. 7 дням',
+      pos: trend >= 0,
+      spark: st.totals,
+      color:'#2563EB'
+    },
+    {
+      cls:'green',
+      label:'Лидер: ' + getDisplayName(best),
+      val: st.catAvg[best].toFixed(1) + '%',
+      delta:'Лучшая категория',
+      pos:true,
+      neutral:true,
+      spark: rows.map(r => num(r[best])),
+      color:'#059669'
+    },
+    {
+      cls:'red',
+      label:'Аутсайдер: ' + getDisplayName(worst),
+      val: st.catAvg[worst].toFixed(1) + '%',
+      delta:'Требует внимания',
+      pos:false,
+      neutral:true,
+      spark: rows.map(r => num(r[worst])),
+      color:'#DC2626'
+    },
+    {
+      cls:'purple',
+      label:'Последний день',
+      val: st.lastVal.toFixed(1) + '%',
+      delta:(dayDelta >= 0 ? '+' : '') + dayDelta.toFixed(1) + '% к предыдущему',
+      pos: dayDelta >= 0,
+      spark: st.totals.slice(Math.max(0, st.totals.length - 14)),
+      color:'#7C3AED'
+    },
+    {
+      cls:'cyan',
+      label:'Категорий выше нормы ≥75%',
+      val: st.above75 + ' / ' + cats.length,
+      delta: st.above75 >= Math.ceil(cats.length * 0.5) ? 'Норма выполняется' : 'Ниже ожидаемого',
+      pos: st.above75 >= Math.ceil(cats.length * 0.5),
+      neutral: st.above75 >= Math.ceil(cats.length * 0.5),
+      spark: st.sorted.map(k => st.catAvg[k]),
+      color:'#0891B2'
+    }
+  ];
+
+  document.getElementById('kpiGrid').innerHTML = cards.map(c => `
+    <div class="kpi-card ${c.cls}">
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-value">${c.val}</div>
+      <div class="kpi-delta ${c.neutral ? 'neu' : c.pos ? 'pos' : 'neg'}">
+        ${c.neutral ? '●' : c.pos ? '↑' : '↓'} ${c.delta}
+      </div>
+      <div class="kpi-spark">${sparkline(c.spark, c.color, 180, 40)}</div>
+    </div>
+  `).join('');
+}
+
+/* ────────────────────────────────────────────────────────────
+   CHART.JS DEFAULTS
+──────────────────────────────────────────────────────────── */
+Chart.defaults.font.family = "'Onest', -apple-system, sans-serif";
+Chart.defaults.color = '#64748B';
+
+const TOOLTIP_BASE = {
+  backgroundColor:'#1E293B',
+  titleColor:'#E2E8F0',
+  bodyColor:'#94A3B8',
+  borderColor:'#334155',
+  borderWidth:1,
+  padding:12,
+  titleFont:{size:12,weight:'600'},
+  bodyFont:{size:12},
+};
+
+/* ────────────────────────────────────────────────────────────
+   AREA CHART
+──────────────────────────────────────────────────────────── */
+function renderArea(rows, st) {
+  const ctx = document.getElementById('areaChart').getContext('2d');
+  if (areaChart) areaChart.destroy();
+
+  const dates = rows.map(r => r.placement_day);
+  const top10 = st.sorted.slice(0, Math.min(10, st.sorted.length));
+
+  const rawMat = top10.map(k => rows.map(r => num(r[k])));
+  const rowSums = rows.map((_, i) => rawMat.reduce((s, arr) => s + num(arr[i]), 0));
+  const normMat = rawMat.map(vals => vals.map((v, i) => rowSums[i] > 0 ? +(v / rowSums[i] * 100).toFixed(2) : 0));
+
+  const catDatasets = top10.map((k, i) => ({
+    label: getDisplayName(k),
+    data: normMat[i],
+    borderColor: PALETTE[i % PALETTE.length].s,
+    backgroundColor: PALETTE[i % PALETTE.length].p,
+    borderWidth: 1.5,
+    fill: true,
+    tension: 0.42,
+    pointRadius: 0,
+    pointHoverRadius: 4,
+    pointBackgroundColor: PALETTE[i % PALETTE.length].s,
+    yAxisID: 'yStack',
+    order: i + 1,
+  }));
+
+  const totalDs = {
+    label: 'Итого % (факт)',
+    data: rows.map(r => num(r.total_share)),
+    borderColor: '#1E293B',
+    backgroundColor: 'transparent',
+    borderWidth: 2.5,
+    fill: false,
+    tension: 0.42,
+    pointRadius: 3,
+    pointHoverRadius: 6,
+    pointBackgroundColor: '#fff',
+    pointBorderColor: '#1E293B',
+    pointBorderWidth: 2,
+    yAxisID: 'yTotal',
+    order: 0,
+  };
+
+  areaChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: dates, datasets: [totalDs, ...catDatasets] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 3.5,
+      interaction: { mode:'index', intersect:false },
+      plugins: {
+        legend: { display:false },
+        tooltip: {
+          ...TOOLTIP_BASE,
+          callbacks: {
+            label: c => c.dataset.yAxisID === 'yTotal'
+              ? ` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%`
+              : ` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}% в топ-10`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color:'#F1F5F9', lineWidth:1 },
+          ticks: { color:'#94A3B8', font:{size:11}, maxRotation:45, maxTicksLimit:15 }
+        },
+        yTotal: {
+          position:'left', min:0, max:100,
+          grid: { color:'#E9EFF6', lineWidth:1 },
+          ticks: { color:'#1E293B', font:{size:11,weight:'600'}, callback:v=>v+'%' },
+          title: { display:true, text:'Итого %', color:'#1E293B', font:{size:11,weight:'600'} }
+        },
+        yStack: {
+          position:'right', stacked:true, min:0, max:100,
+          grid: { display:false },
+          ticks: { color:'#94A3B8', font:{size:11}, callback:v=>v+'%' },
+          title: { display:true, text:'Состав топ-10', color:'#94A3B8', font:{size:10} }
+        }
+      }
+    }
+  });
+
+  document.getElementById('areaLegend').innerHTML =
+    `<div class="leg-item"><div class="leg-dot" style="background:#1E293B;width:16px;height:3px;border-radius:2px;"></div>Итого % (факт)</div>` +
+    top10.map((k,i)=>`<div class="leg-item"><div class="leg-sq" style="background:${PALETTE[i % PALETTE.length].s}"></div>${getDisplayName(k)}</div>`).join('');
+
+  document.getElementById('area-period-badge').textContent =
+    rows[0].placement_day + ' — ' + rows[rows.length-1].placement_day;
+}
+
+/* ────────────────────────────────────────────────────────────
+   LINE CHART
+──────────────────────────────────────────────────────────── */
+function renderLine(rows, st) {
+  const ctx = document.getElementById('lineChart').getContext('2d');
+  if (lineChart) lineChart.destroy();
+
+  const dates = rows.map(r=>r.placement_day);
+  const s = st.sorted;
+
+  const picks = [];
+  if (s.length) picks.push(s[0]);
+  if (s.length > 1) picks.push(s[1]);
+  if (s.length > 2) picks.push(s[Math.floor(s.length / 2)]);
+  if (s.length > 3) picks.push(s[s.length - 2]);
+  if (s.length > 4) picks.push(s[s.length - 1]);
+
+  const uniquePicks = [...new Set(picks)];
+  const pickColors = ['#059669','#3B82F6','#F59E0B','#F97316','#EF4444'];
+  const dashes = [[],[],[4,3],[4,3],[2,3]];
+
+  lineChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: dates,
+      datasets: [
+        {
+          label:'Итого %',
+          data: rows.map(r=>num(r.total_share)),
+          borderColor:'#CBD5E1',
+          backgroundColor:'transparent',
+          borderWidth:1.5,
+          borderDash:[3,3],
+          tension:0.4,
+          pointRadius:0,
+          pointHoverRadius:3,
+        },
+        ...uniquePicks.map((k,i)=>({
+          label: getDisplayName(k),
+          data: rows.map(r=>num(r[k])),
+          borderColor: pickColors[i % pickColors.length],
+          backgroundColor:'transparent',
+          borderWidth:2,
+          borderDash: dashes[i % dashes.length],
+          tension:0.4,
+          pointRadius:2,
+          pointHoverRadius:5,
+          pointBackgroundColor: pickColors[i % pickColors.length],
+        }))
+      ]
+    },
+    options: {
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins: {
+        legend: {
+          display:true, position:'bottom',
+          labels: { font:{size:11}, color:'#475569', boxWidth:13, padding:12 }
+        },
+        tooltip: {
+          ...TOOLTIP_BASE,
+          callbacks: { label: c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%` }
+        }
+      },
+      scales: {
+        x: { grid:{color:'#F1F5F9'}, ticks:{color:'#94A3B8',font:{size:10},maxTicksLimit:10,maxRotation:45} },
+        y: { min:0, max:100, grid:{color:'#F1F5F9'}, ticks:{color:'#94A3B8',font:{size:11},callback:v=>v+'%'} }
+      }
+    }
+  });
+}
+
+/* ────────────────────────────────────────────────────────────
+   BAR CHART
+──────────────────────────────────────────────────────────── */
+function renderBar(st) {
+  const ctx = document.getElementById('barChart').getContext('2d');
+  if (barChart) barChart.destroy();
+
+  const labels = st.sorted.map(k => getDisplayName(k));
+  const vals = st.sorted.map(k => +st.catAvg[k].toFixed(1));
+  const bgs = vals.map(v =>
+    v >= 80 ? 'rgba(5,150,105,.75)' :
+    v >= 65 ? 'rgba(37,99,235,.65)' :
+    v >= 50 ? 'rgba(245,158,11,.65)' :
+              'rgba(220,38,38,.65)'
+  );
+  const borders = vals.map(v =>
+    v >= 80 ? '#059669' :
+    v >= 65 ? '#2563EB' :
+    v >= 50 ? '#D97706' :
+              '#DC2626'
+  );
+
+  barChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets:[{
+        label:'Средний %',
+        data:vals,
+        backgroundColor:bgs,
+        borderColor:borders,
+        borderWidth:1.5,
+        borderRadius:5,
+        borderSkipped:false
+      }]
+    },
+    options: {
+      indexAxis:'y',
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins: {
+        legend:{display:false},
+        tooltip:{...TOOLTIP_BASE, callbacks:{label:c=>` ${c.parsed.x.toFixed(1)}%`}}
+      },
+      scales: {
+        x: { min:0, max:100, grid:{color:'#F1F5F9'}, ticks:{color:'#94A3B8',font:{size:11},callback:v=>v+'%'} },
+        y: { grid:{display:false}, ticks:{color:'#374151',font:{size:11}} }
+      }
+    }
+  });
+
+  document.getElementById('barChart').style.height = (labels.length * 28 + 40) + 'px';
+}
+
+/* ────────────────────────────────────────────────────────────
+   HEATMAP
+──────────────────────────────────────────────────────────── */
+function hmColor(v) {
+  const a = clamp(v, 0, 100) / 100;
+  const r = Math.round(255 - a*(255-37));
+  const g = Math.round(255 - a*(255-99));
+  const b = Math.round(255 - a*(255-235));
+  return `rgb(${r},${g},${b})`;
+}
+function txtColor(v) {
+  return v > 65 ? '#1E3A8A' : '#374151';
+}
+function barColor(v) {
+  if (v>=80) return '#059669';
+  if (v>=65) return '#2563EB';
+  if (v>=50) return '#D97706';
+  return '#DC2626';
+}
+function cell(v) {
+  const value = clamp(num(v), 0, 100);
+  const bg = hmColor(value), tc = txtColor(value), bc = barColor(value);
+  return `<td style="background:${bg}">
+    <div class="cell-in">
+      <span class="cell-val" style="color:${tc}">${value.toFixed(1)}</span>
+      <div class="cell-bar-wrap"><div class="cell-bar" style="width:${value}%;background:${bc}40"></div></div>
+    </div>
+  </td>`;
+}
+function renderHeatmap(rows, st) {
+  const cats = st.sorted;
+  const tbl = document.getElementById('hmTable');
+
+  const hdr = `<thead><tr>
+    <th>Дата</th>
+    <th>Итого %</th>
+    ${cats.map(k=>`<th>${getDisplayName(k)}</th>`).join('')}
+  </tr></thead>`;
+
+  const body = '<tbody>' + rows.map(row =>
+    `<tr>
+      <td>${row.placement_day}</td>
+      ${cell(row.total_share)}
+      ${cats.map(k => cell(row[k])).join('')}
+    </tr>`
+  ).join('') + '</tbody>';
+
+  const foot = `<tfoot><tr>
+    <td>Среднее</td>
+    ${cell(st.avgTotal)}
+    ${cats.map(k => cell(st.catAvg[k])).join('')}
+  </tr></tfoot>`;
+
+  tbl.innerHTML = hdr + body + foot;
+}
+
+/* ────────────────────────────────────────────────────────────
+   HEADER / MODES
+──────────────────────────────────────────────────────────── */
+function updateHeader(rows) {
+  const f = rows[0].placement_day;
+  const l = rows[rows.length - 1].placement_day;
+  document.getElementById('period-sub').textContent = `Период: ${f} — ${l} · ${rows.length} дней`;
+  document.getElementById('period-badge').textContent = rows.length + ' дней';
+}
+function updateModeChips(mode) {
+  const chipSafebox = document.getElementById('chipSafebox');
+  const chipMerge = document.getElementById('chipMerge');
+
+  chipSafebox.textContent = mode.excludeSafebox
+    ? 'Safebox исключён и перераспределён'
+    : 'Safebox в расчёте';
+  chipSafebox.classList.toggle('active', mode.excludeSafebox);
+
+  chipMerge.textContent = mode.mergeSportHobby
+    ? 'Спорт и хобби объединены'
+    : 'Категории раздельно';
+  chipMerge.classList.toggle('active', mode.mergeSportHobby);
+}
+
+/* ────────────────────────────────────────────────────────────
+   MAIN RENDER
+──────────────────────────────────────────────────────────── */
+function renderFromRaw() {
+  if (!rawRows.length) return;
+  hideError();
+
+  const mode = getModeState();
+  const rows = transformRows(rawRows, mode);
+  const cats = getActiveCategories(rows);
+  const st = stats(rows, cats);
+
+  updateHeader(rows);
+  updateModeChips(mode);
+  renderKPIs(rows, st, cats);
+  renderArea(rows, st);
+  renderLine(rows, st);
+  renderBar(st);
+  renderHeatmap(rows, st);
+}
+
+function loadCsvText(csvText) {
+  try {
+    rawRows = parseCSV(csvText);
+    renderFromRaw();
+  } catch (err) {
+    showError(err && err.message ? err.message : 'Ошибка обработки файла.');
+    console.error(err);
+  }
+}
+
+/* ────────────────────────────────────────────────────────────
+   EVENTS
+──────────────────────────────────────────────────────────── */
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // 1) Сразу показываем данные локально
+  const reader = new FileReader();
+  reader.onload = ev => loadCsvText(ev.target.result);
+  reader.readAsText(file, 'UTF-8');
+
+  // 2) Отправляем CSV на сервер, чтобы файл сохранился и был виден всем пользователям
+  const formData = new FormData();
+  formData.append('file', file);
+
+  fetch('/upload', {
+    method: 'POST',
+    body: formData
+  }).catch(err => {
+    console.error('Upload failed', err);
+  });
+
+  this.value = '';
+});
+
+document.getElementById('toggleSafebox').addEventListener('change', renderFromRaw);
+document.getElementById('toggleMerge').addEventListener('change', renderFromRaw);
+
+/* ────────────────────────────────────────────────────────────
+   INIT
+──────────────────────────────────────────────────────────── */
+// Пытаемся загрузить последний сохранённый CSV с сервера.
+// Если его ещё нет или сервер недоступен, используем встроенный CSV.
+fetch('/data')
+  .then(resp => {
+    if (!resp.ok) throw new Error('No server CSV');
+    return resp.text();
+  })
+  .then(text => {
+    loadCsvText(text);
+  })
+  .catch(() => {
+    loadCsvText(EMBEDDED_CSV);
+  });
+</script>
+</body>
+</html>
