@@ -5,6 +5,7 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '0.0.0.0';
 
 // Paths
 const PUBLIC_DIR = __dirname;
@@ -47,7 +48,7 @@ app.get('/data', (req, res) => {
   fs.createReadStream(CSV_PATH).pipe(res);
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`Server running on http://${HOST}:${PORT}`);
 });
 
