@@ -1,3 +1,6 @@
+<<<<<<< HEAD
+# Bot-dashbord
+=======
 # Placement Dashboard
 
 Simple Express app that serves `index.html`, accepts a CSV upload, and exposes the latest uploaded file at `/data`.
@@ -96,3 +99,4 @@ Expected response:
 {"ok":true}
 ```
 
+>>>>>>> f7b7b30 (Save current changes before pull)
