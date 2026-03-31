@@ -1159,9 +1159,23 @@ function loadCsvText(csvText) {
 document.getElementById('fileInput').addEventListener('change', function(e) {
   const file = e.target.files[0];
   if (!file) return;
+
+  // 1) Сразу показываем данные локально
   const reader = new FileReader();
   reader.onload = ev => loadCsvText(ev.target.result);
   reader.readAsText(file, 'UTF-8');
+
+  // 2) Отправляем CSV на сервер, чтобы файл сохранился и был виден всем пользователям
+  const formData = new FormData();
+  formData.append('file', file);
+
+  fetch('/upload', {
+    method: 'POST',
+    body: formData
+  }).catch(err => {
+    console.error('Upload failed', err);
+  });
+
   this.value = '';
 });
 
@@ -1171,7 +1185,19 @@ document.getElementById('toggleMerge').addEventListener('change', renderFromRaw)
 /* ────────────────────────────────────────────────────────────
    INIT
 ──────────────────────────────────────────────────────────── */
-loadCsvText(EMBEDDED_CSV);
+// Пытаемся загрузить последний сохранённый CSV с сервера.
+// Если его ещё нет или сервер недоступен, используем встроенный CSV.
+fetch('/data')
+  .then(resp => {
+    if (!resp.ok) throw new Error('No server CSV');
+    return resp.text();
+  })
+  .then(text => {
+    loadCsvText(text);
+  })
+  .catch(() => {
+    loadCsvText(EMBEDDED_CSV);
+  });
 </script>
 </body>
 </html>
