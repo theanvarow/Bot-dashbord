@@ -17,8 +17,25 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-// Multer storage in memory (we will write ourselves)
-const upload = multer({ storage: multer.memoryStorage() });
+// Keep uploads in memory and only accept CSV files.
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const isCsvMime = [
+      'text/csv',
+      'application/vnd.ms-excel',
+      'application/csv'
+    ].includes(file.mimetype);
+    const isCsvName = path.extname(file.originalname || '').toLowerCase() === '.csv';
+
+    if (isCsvMime || isCsvName) {
+      return cb(null, true);
+    }
+
+    return cb(new Error('Only CSV files are allowed'));
+  }
+});
 
 // Serve static files (index.html, etc.)
 app.use(express.static(PUBLIC_DIR));
@@ -48,7 +65,22 @@ app.get('/data', (req, res) => {
   fs.createReadStream(CSV_PATH).pipe(res);
 });
 
+app.get('/health', (req, res) => {
+  res.json({ ok: true });
+});
+
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({ error: err.message });
+  }
+
+  if (err) {
+    return res.status(400).json({ error: err.message || 'Upload failed' });
+  }
+
+  return next();
+});
+
 app.listen(PORT, HOST, () => {
   console.log(`Server running on http://${HOST}:${PORT}`);
 });
-
